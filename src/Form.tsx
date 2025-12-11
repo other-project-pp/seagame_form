@@ -71,12 +71,14 @@ const Form = () => {
   const [allDistricts, setAllDistricts] = useState<District[]>([]);
   const [allSubdistricts, setAllSubdistricts] = useState<Subdistrict[]>([]);
   const [site, setSite] = useState<Site | null>(null);
+  const [avasite, setAvaSite] = useState<string[]>([]);
   const [isInvalidSite, setIsInvalidSite] = useState<boolean>(false);
-
+  const [status, setStatus] = useState<boolean>(false);
+  
   useEffect(() => {
     const path = window.location.pathname.split('/');
     const siteName = path[path.length - 1];
-
+    getAvailableSites();
     fetch('/thaigeo/provinces.json')
       .then((response) => response.json())
       .then((data) => setProvinces(data));
@@ -114,8 +116,11 @@ const Form = () => {
             autoClose: 5000,
           });
         }
+        console.log("foundSite", foundSite);
       });
   }, []);
+
+
 
   const filteredDistricts = useMemo(() => {
     if (!formData.province) return [];
@@ -152,6 +157,22 @@ const Form = () => {
     }
   }, [formData.subdistrict, formData.province, formData.district, allSubdistricts]);
 
+  const getAvailableSites = async () => {
+    //const response: any = await fetch('https://b-api.thaideal.co/api/prize/prizesite', {
+    const response: any = await fetch('http://localhost:3031/api/prize/prizesite', {
+      method: 'GET',
+    }
+    )
+    const resp = await response.json();
+    setAvaSite(resp.sites);
+  };
+
+  useEffect(() => {
+    console.log("ava", avasite);
+    if (site?.name && avasite.includes( site?.name.toLocaleLowerCase())) {
+      setStatus(true);
+    }
+  }, [avasite, site]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -217,7 +238,7 @@ const Form = () => {
     //     });
     //     return;
     // }
-    return alert(`สิทธิ์การลงทะเบียน กล่องสุ่ม SEAGAME2025 สุดพรีเมียม ได้สิ้นสุดลงแล้ว`);
+    //return alert(`สิทธิ์การลงทะเบียน กล่องสุ่ม SEAGAME2025 สุดพรีเมียม ได้สิ้นสุดลงแล้ว`);
     const requiredFields = ['username', 'receiverName', 'houseNo', 'district', 'province', 'subdistrict', 'phone'];
     for (let field of requiredFields) {
       if (!formData[field as keyof FormData]) {
@@ -247,7 +268,8 @@ const Form = () => {
     };
 
     try {
-      const response = await fetch('https://b-api.thaideal.co/api/prize', {
+      //const response = await fetch('https://b-api.thaideal.co/api/prize', {
+      const response = await fetch('http://localhost:3031/api/prize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,9 +310,11 @@ const Form = () => {
           <h1>กรอกที่อยู่เพื่อรับของรางวัล</h1>
           <p>กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง เพื่อให้จัดส่งของรางวัลไปถึงคุณได้อย่างรวดเร็ว</p>
           {/* add Warrning or ประกาด Here  */}
-          <Alert sx={{ mt: 2 }} severity="warning" className="announcement">
-            สิทธิ์การลงทะเบียน กล่องสุ่ม SEAGAME2025 สุดพรีเมียม ได้สิ้นสุดลงแล้ว
-          </Alert>
+          {status === false && (
+            <Alert sx={{ mt: 2 }} severity="warning" className="announcement">
+              สิทธิ์การลงทะเบียน กล่องสุ่ม SEAGAME2025 สุดพรีเมียม ได้สิ้นสุดลงแล้ว
+          </Alert>  
+          )}
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -485,7 +509,10 @@ const Form = () => {
 
           <div className="btn-row">
             <button type="reset" className="btn btn-secondary">ล้างข้อมูล</button>
-            <Button
+            {status === true ? (
+              <button type="submit" className="btn btn-primary">ยืนยันส่งที่อยู่</button>
+            ) : (
+              <Button
               type="submit"
               disabled={true}
               startIcon={<Warning />}
@@ -505,6 +532,7 @@ const Form = () => {
             >
               ยืนยันส่งที่อยู่
             </Button>
+            )}
           </div>
         </form>
 
